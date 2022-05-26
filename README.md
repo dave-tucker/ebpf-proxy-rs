@@ -23,6 +23,7 @@ To test the service:
 curl http://169.254.1.1:80
 ```
 
+> NOTE: You may need to pass --cgroup-path /sys/fs/cgroup/unified depending on your cgroup setup
 ## License
 
 This project is distributed under the terms of either the [MIT license] or the [Apache License] (version

@@ -1,4 +1,4 @@
-use std::net::Ipv4Addr;
+use std::{io, net::Ipv4Addr};
 
 use aya::{
     include_bytes_aligned,
@@ -11,6 +11,7 @@ use clap::Parser;
 use log::info;
 use proxy_common::{Lb4Backend, Lb4Service, ServiceIdentifer, V4Key};
 use simplelog::{ColorChoice, ConfigBuilder, LevelFilter, TermLogger, TerminalMode};
+use thiserror::Error;
 use tokio::signal;
 
 #[derive(Debug, Parser)]
@@ -21,6 +22,12 @@ struct Opt {
     service_vip: Ipv4Addr,
     #[clap(long)]
     service_backend: Ipv4Addr,
+}
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("path to root cgroup heirarchy is not valid")]
+    InvalidCgroup(#[from] io::Error),
 }
 
 #[tokio::main]
@@ -102,7 +109,7 @@ async fn main() -> Result<(), anyhow::Error> {
     )?;
 
     let program: &mut CgroupSockAddr = bpf.program_mut("sock4_connect").unwrap().try_into()?;
-    let cgroup = std::fs::File::open(opt.cgroup_path)?;
+    let cgroup = std::fs::File::open(opt.cgroup_path).map_err(Error::InvalidCgroup)?;
     program.load()?;
     program.attach(cgroup)?;
 
